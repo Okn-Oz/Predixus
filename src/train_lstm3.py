@@ -120,7 +120,7 @@ if __name__ == "__main__":
         future_pred_normalized = torch.Tensor.cpu(model(last_10_days_tensor)).numpy()
         future_pred_real = future_base_price * (future_pred_normalized[0][0] + 1.0)
 
-    torch.save(model.state_dict(), 'LSTM_Attention.pth')
+    torch.save(model.state_dict(), 'models/LSTM_Attention.pth')
 
     plt.figure(figsize=(12,6))
     plt.plot(actual_real, color="black", label="Actual Open Price", linewidth=2)
