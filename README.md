@@ -6,8 +6,8 @@ AI Powered Financial Time Series Forecasting System
 - You should have miniconda or Anaconda installed on your machine.
 
 # Setup Instructions
-`conda env create -f environment.yml`
-`conda activate financial_lstm`
+- `conda env create -f environment.yml`
+- `conda activate financial_lstm`
 
 # Install PyTorch (Linux/WSL)
 Go to https://pytorch.org/get-started/locally/ and select a desired version of pytorch.
