@@ -29,7 +29,7 @@ if __name__ == "__main__":
     TEST_SIZE: int = 50  # Amount of rows to be used as test data /From closest date
     SEQ_LENGTH: int = 10 # Sequence size
 
-    df: pd.DataFrame = pd.read_csv("all_bist100.csv")
+    df: pd.DataFrame = pd.read_csv("data/all_bist100.csv")
 
     delta = df['Close'].diff() # Calculate close changes between days t1-t0
 

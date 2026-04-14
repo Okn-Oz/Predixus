@@ -2,7 +2,7 @@ import requests
 
 url = "http://localhost:8000/predict"
 
-file_path = "all_bist100.csv" 
+file_path = "data/all_bist100.csv" 
 
 with open(file_path, "rb") as f:
     files = {"file": (file_path, f, "text/csv")}

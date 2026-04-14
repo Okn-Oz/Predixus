@@ -9,7 +9,7 @@ import uvicorn
 app = FastAPI()
 model = FinancialAttentionLSTM()
 
-weights = torch.load('LSTM_Attention.pth', map_location=torch.device('cpu'))
+weights = torch.load('models/LSTM_Attention.pth', map_location=torch.device('cpu'))
 
 model.load_state_dict(weights)
 model.eval()
