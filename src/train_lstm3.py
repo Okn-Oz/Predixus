@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
+from src.config import DEVICE
 
 class FinancialAttentionLSTM(nn.Module):
     def __init__(self, input_size=6, hidden_size=20):
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     y_train, y_test = y[:train_size], y[train_size:]
     bases_train, bases_test = bases[:train_size], bases[train_size:]
 
-    model = FinancialAttentionLSTM()
+    model = FinancialAttentionLSTM().to(DEVICE)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 

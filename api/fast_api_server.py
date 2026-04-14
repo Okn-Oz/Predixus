@@ -5,11 +5,12 @@ import io
 import pandas as pd
 from src.train_lstm3 import FinancialAttentionLSTM 
 import uvicorn
+from src.config import DEVICE
 
 app = FastAPI()
 model = FinancialAttentionLSTM()
 
-weights = torch.load('models/LSTM_Attention.pth', map_location=torch.device('cpu'))
+weights = torch.load('models/LSTM_Attention.pth', map_location=torch.device(DEVICE))
 
 model.load_state_dict(weights)
 model.eval()
@@ -50,7 +51,7 @@ async def predict(file: UploadFile = File(...)):
     last_10_days[:, 0:4] = (last_10_days[:, 0:4] / base_price) - 1.0  
     last_10_days[:, 4] = (last_10_days[:, 4] / base_vol) - 1.0        
 
-    tensor_data = torch.tensor(last_10_days, dtype=torch.float32).unsqueeze(0).to('cpu')
+    tensor_data = torch.tensor(last_10_days, dtype=torch.float32).unsqueeze(0).to(DEVICE)
 
     with torch.no_grad():
         output_normalized = model(tensor_data)
