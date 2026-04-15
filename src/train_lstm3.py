@@ -86,14 +86,15 @@ if __name__ == "__main__":
     X_train = X_train.to(DEVICE)
     y_train = y_train.to(DEVICE)
 
-    epochs = 10000
+    epochs = 1000
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=10)
+
     print(f"Training on {len(X_train)} days of data...")
     for epoch in range(epochs):
         model.train()
         optimizer.zero_grad()
         predictions = model(X_train)
         loss = criterion(predictions, y_train)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=10)
 
         loss.backward()
         optimizer.step()
@@ -104,7 +105,7 @@ if __name__ == "__main__":
 
     model.eval()
     with torch.no_grad():
-        test_preds_normalized = torch.Tensor.cpu(model(X_test)).numpy()
+        test_preds_normalized = torch.Tensor.cpu(model(X_test.to(DEVICE))).numpy()
         
         test_preds_real = bases_test * (test_preds_normalized + 1.0)
         actual_real = bases_test * (torch.Tensor.cpu(y_test).numpy() + 1.0)
@@ -120,7 +121,7 @@ if __name__ == "__main__":
     last_10_days_tensor = torch.tensor(last_10_days_raw, dtype=torch.float32).unsqueeze(0)
 
     with torch.no_grad():
-        future_pred_normalized = torch.Tensor.cpu(model(last_10_days_tensor)).numpy()
+        future_pred_normalized = torch.Tensor.cpu(model(last_10_days_tensor.to(DEVICE))).numpy()
         future_pred_real = future_base_price * (future_pred_normalized[0][0] + 1.0)
 
     torch.save(model.state_dict(), 'models/LSTM_Attention.pth')
