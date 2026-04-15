@@ -1,0 +1,6 @@
+@Predixus.API_HostAddress = http://localhost:5119
+
+GET {{Predixus.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

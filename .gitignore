@@ -1,0 +1,52 @@
+## .NET gitignore
+
+# Build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Visual Studio
+.vs/
+*.rsuser
+*.vsp
+*.vsps
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# EF Core Migrations (keep migrations, exclude designer files)
+# src/**/*.Designer.cs  # ← açık bırakıyoruz, migration'lar kayıt altında olsun
+
+# Secrets / Config overrides
+appsettings.Development.json
+appsettings.Production.json
+**/secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Docker volumes
+docker-volumes/
