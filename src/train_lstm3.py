@@ -83,6 +83,9 @@ if __name__ == "__main__":
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+    X_train = X_train.to(DEVICE)
+    y_train = y_train.to(DEVICE)
+
     epochs = 10000
     print(f"Training on {len(X_train)} days of data...")
     for epoch in range(epochs):
