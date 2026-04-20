@@ -32,7 +32,7 @@ public class PredictionConfiguration : IEntityTypeConfiguration<Prediction>
             .IsRequired();
 
         builder.HasMany(p => p.Points)
-            .WithOne()
+            .WithOne(pp => pp.Prediction)
             .HasForeignKey(pp => pp.PredictionId)
             .OnDelete(DeleteBehavior.Cascade);
     }

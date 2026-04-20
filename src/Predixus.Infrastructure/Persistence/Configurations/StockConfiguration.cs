@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Predixus.Domain.Entities;
+using System.Runtime.CompilerServices;
 
 namespace Predixus.Infrastructure.Persistence.Configurations;
 
@@ -43,4 +44,5 @@ public class StockConfiguration : IEntityTypeConfiguration<Stock>
             .HasForeignKey(p => p.StockId)
             .OnDelete(DeleteBehavior.Cascade);
     }
+
 }

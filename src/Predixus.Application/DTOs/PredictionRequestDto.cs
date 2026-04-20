@@ -1,3 +1,4 @@
 namespace Predixus.Application.DTOs;
 
-public record PredictionRequestDto(string Symbol, int ForecastDays);
+// Tahmin isteği — BIST100 endeksini tahmin eder, parametre gerekmez.
+public record PredictionRequestDto;

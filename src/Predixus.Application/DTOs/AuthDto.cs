@@ -8,7 +8,10 @@ public record AuthResponse(
     string AccessToken,
     string RefreshToken,
     DateTime ExpiresAt,
-    string Email
+    string Email,
+    string Role
 );
 
 public record RefreshTokenRequest(string RefreshToken);
+
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

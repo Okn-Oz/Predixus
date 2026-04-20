@@ -15,36 +15,33 @@ public class PredictionService(
     IMlPredictionClient mlClient,
     ILogger<PredictionService> logger) : IPredictionService
 {
-    public async Task<PredictionResponseDto> PredictAsync(
-        Guid userId,
-        PredictionRequestDto request,
-        CancellationToken ct = default)
-    {
-        var symbol = request.Symbol.ToUpperInvariant();
-        var cacheKey = $"prediction:{symbol}:{request.ForecastDays}d";
+    private const string Bist100Symbol = "XU100";
+    private const string CacheKey = "prediction:bist100:1d";
+    private const int MinRequiredDays = 24;
+    private const int HistoryDays = 60;
 
+    public async Task<PredictionResponseDto> PredictAsync(Guid userId, CancellationToken ct = default)
+    {
         // 1. Redis cache kontrolü
-        var cached = await cache.GetAsync<PredictionResponseDto>(cacheKey, ct);
+        var cached = await cache.GetAsync<PredictionResponseDto>(CacheKey, ct);
         if (cached is not null)
         {
-            logger.LogInformation("Cache HIT: {CacheKey}", cacheKey);
+            logger.LogInformation("Cache HIT: {CacheKey}", CacheKey);
             return cached with { FromCache = true };
         }
 
-        // 2. Hisse DB'de var mı?
-        var stock = await stockRepository.GetBySymbolAsync(symbol, ct)
-            ?? throw new NotFoundException($"'{symbol}' sembolü bulunamadı.");
+        // 2. BIST100 verisi DB'de var mı?
+        var stock = await stockRepository.GetBySymbolAsync(Bist100Symbol, ct)
+            ?? throw new NotFoundException("BIST100 (XU100) verisi bulunamadı.");
 
-        // 3. Son 60 günlük fiyat (min 30 gün şartı)
-        var prices = await stockPriceRepository.GetBySymbolAsync(symbol, days: 60, ct);
-        if (prices.Count < 30)
+        // 3. Geçmiş fiyat verisi (min 24 gün)
+        var prices = await stockPriceRepository.GetBySymbolAsync(Bist100Symbol, days: HistoryDays, ct);
+        if (prices.Count < MinRequiredDays)
             throw new InsufficientDataException(
-                $"'{symbol}' için yeterli fiyat verisi yok. Minimum 30 gün gerekli, mevcut: {prices.Count}.");
+                $"Yeterli fiyat verisi yok. Minimum {MinRequiredDays} gün gerekli, mevcut: {prices.Count}.");
 
         // 4. ML servisine gönder
         var mlInput = new MlPredictionInput(
-            Symbol: symbol,
-            ForecastDays: request.ForecastDays,
             HistoricalData: prices
                 .OrderBy(p => p.Date)
                 .Select(p => new StockPricePoint(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume))
@@ -53,38 +50,36 @@ public class PredictionService(
 
         var mlOutput = await mlClient.PredictAsync(mlInput, ct);
 
-        // 5. Prediction entity oluştur ve DB'ye kaydet
-        var prediction = Prediction.Create(stock.Id, userId, request.ForecastDays, mlOutput.Confidence);
-
-        for (int i = 0; i < mlOutput.PredictedPrices.Count; i++)
-        {
-            prediction.Points.Add(PredictionPoint.Create(
-                predictionId: prediction.Id,
-                dayOffset: i + 1,
-                predictedPrice: mlOutput.PredictedPrices[i]
-            ));
-        }
-
+        // 5. DB'ye kaydet
+        var prediction = Prediction.Create(stock.Id, userId, forecastDays: 1, confidenceScore: 0m);
+        prediction.Points.Add(PredictionPoint.Create(prediction.Id, dayOffset: 1, mlOutput.PredictedPrice));
         await predictionRepository.AddAsync(prediction, ct);
 
-        // 6. Response DTO oluştur
-        var response = ToDto(prediction, symbol, fromCache: false);
+        // 6. Response oluştur
+        var response = new PredictionResponseDto(
+            PredictionId: prediction.Id,
+            PredictedPrice: mlOutput.PredictedPrice,
+            PredictedAt: prediction.PredictedAt,
+            FromCache: false
+        );
 
-        // 7. Redis'e cache'le (TTL = gün sonu)
-        await cache.SetAsync(cacheKey, response, TimeUntilEndOfDay(), ct);
+        // 7. Cache'le
+        await cache.SetAsync(CacheKey, response, TimeUntilEndOfDay(), ct);
 
-        logger.LogInformation(
-            "Tahmin oluşturuldu: {Symbol}, {Days} gün, confidence={Confidence}",
-            symbol, request.ForecastDays, mlOutput.Confidence);
+        logger.LogInformation("BIST100 tahmini oluşturuldu: {PredictedPrice}", mlOutput.PredictedPrice);
 
         return response;
     }
 
-    public async Task<List<PredictionResponseDto>> GetHistoryAsync(
-        string symbol, int count, CancellationToken ct = default)
+    public async Task<List<PredictionResponseDto>> GetHistoryAsync(Guid userId, int count, CancellationToken ct = default)
     {
-        var predictions = await predictionRepository.GetBySymbolAsync(symbol, count, ct);
-        return predictions.Select(p => ToDto(p, symbol.ToUpperInvariant(), fromCache: false)).ToList();
+        var predictions = await predictionRepository.GetByUserAsync(userId, Bist100Symbol, count, ct);
+        return predictions.Select(p => new PredictionResponseDto(
+            PredictionId: p.Id,
+            PredictedPrice: p.Points.FirstOrDefault()?.PredictedPrice ?? 0,
+            PredictedAt: p.PredictedAt,
+            FromCache: false
+        )).ToList();
     }
 
     public async Task<AccuracyResponseDto> GetAccuracyAsync(Guid predictionId, CancellationToken ct = default)
@@ -92,13 +87,10 @@ public class PredictionService(
         var prediction = await predictionRepository.GetByIdAsync(predictionId, ct)
             ?? throw new NotFoundException($"Tahmin bulunamadı: {predictionId}");
 
-        var stock = await stockRepository.GetByIdAsync(prediction.StockId, ct);
-        var symbol = stock?.Symbol ?? "UNKNOWN";
-
         var actualized = prediction.Points.Where(p => p.ActualPrice.HasValue).ToList();
 
         if (actualized.Count == 0)
-            return new AccuracyResponseDto(predictionId, symbol, prediction.Points.Count, 0, null, null);
+            return new AccuracyResponseDto(predictionId, prediction.Points.Count, 0, null, null);
 
         var mae = actualized.Average(p => Math.Abs((double)(p.ActualPrice!.Value - p.PredictedPrice)));
         var mape = actualized.Average(p =>
@@ -106,31 +98,17 @@ public class PredictionService(
             Math.Abs((double)((p.ActualPrice!.Value - p.PredictedPrice) / p.PredictedPrice)) * 100);
 
         return new AccuracyResponseDto(
-            predictionId, symbol,
+            predictionId,
             prediction.Points.Count, actualized.Count,
             (decimal)Math.Round(mae, 4),
             (decimal)Math.Round(mape, 2)
         );
     }
 
-    private static PredictionResponseDto ToDto(Prediction p, string symbol, bool fromCache) => new(
-        PredictionId: p.Id,
-        Symbol: symbol,
-        ForecastDays: p.ForecastDays,
-        Confidence: p.ConfidenceScore,
-        PredictedAt: p.PredictedAt,
-        FromCache: fromCache,
-        Points: p.Points
-            .OrderBy(pp => pp.DayOffset)
-            .Select(pp => new PredictionPointDto(pp.DayOffset, pp.PredictedPrice, pp.ActualPrice))
-            .ToList()
-    );
-
     private static TimeSpan TimeUntilEndOfDay()
     {
         var now = DateTime.UtcNow;
-        var endOfDay = now.Date.AddDays(1);
-        var ttl = endOfDay - now;
+        var ttl = now.Date.AddDays(1) - now;
         return ttl > TimeSpan.Zero ? ttl : TimeSpan.FromHours(1);
     }
 }

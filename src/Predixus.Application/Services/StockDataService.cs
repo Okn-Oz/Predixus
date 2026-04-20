@@ -35,7 +35,7 @@ public class StockDataService(
             sp.Date, sp.Open, sp.High, sp.Low, sp.Close, sp.Volume, sp.DailyChangePercent)).ToList();
     }
 
-    public async Task SyncStockPricesAsync(string symbol, CancellationToken ct = default)
+    public async Task<int> SyncStockPricesAsync(string symbol, CancellationToken ct = default)
     {
         var stock = await stockRepository.GetBySymbolAsync(symbol, ct)
             ?? throw new NotFoundException($"'{symbol}' sembolü DB'de bulunamadı.");
@@ -65,10 +65,11 @@ public class StockDataService(
         if (newPrices.Count == 0)
         {
             logger.LogInformation("{Symbol} için yeni fiyat verisi yok.", symbol);
-            return;
+            return 0;
         }
 
         await stockPriceRepository.AddRangeAsync(newPrices, ct);
         logger.LogInformation("{Symbol} için {Count} yeni fiyat kaydedildi.", symbol, newPrices.Count);
+        return newPrices.Count;
     }
 }

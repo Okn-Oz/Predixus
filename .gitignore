@@ -50,3 +50,8 @@ logs/
 
 # Docker volumes
 docker-volumes/
+
+# Node
+node_modules/
+frontend/node_modules/
+.npm/

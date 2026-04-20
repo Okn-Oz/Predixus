@@ -8,4 +8,5 @@ public interface IStockPriceRepository
     Task<StockPrice?> GetLatestAsync(string symbol, CancellationToken ct = default);
     Task<bool> ExistsAsync(string symbol, DateOnly date, CancellationToken ct = default);
     Task AddRangeAsync(IEnumerable<StockPrice> prices, CancellationToken ct = default);
+    Task<StockPrice?> GetByDateAsync(string symbol, DateOnly date, CancellationToken ct = default);
 }

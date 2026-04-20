@@ -1,8 +1,13 @@
 namespace Predixus.Application.Interfaces;
 
-public record MlPredictionInput(string Symbol, int ForecastDays, List<StockPricePoint> HistoricalData);
+// ML servisine gönderilecek veri (CSV'ye dönüştürülür)
 public record StockPricePoint(DateOnly Date, decimal Open, decimal High, decimal Low, decimal Close, long Volume);
-public record MlPredictionOutput(string Symbol, string ModelVersion, decimal Confidence, List<decimal> PredictedPrices);
+
+// ML servisine giden istek: sadece geçmiş OHLCV verisi (min 24 gün)
+public record MlPredictionInput(List<StockPricePoint> HistoricalData);
+
+// ML servisinden gelen yanıt: ertesi günün tahmini açılış fiyatı
+public record MlPredictionOutput(decimal PredictedPrice);
 
 public interface IMlPredictionClient
 {

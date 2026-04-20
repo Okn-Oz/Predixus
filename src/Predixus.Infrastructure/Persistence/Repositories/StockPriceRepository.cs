@@ -28,4 +28,9 @@ public class StockPriceRepository(AppDbContext db) : IStockPriceRepository
         await db.StockPrices.AddRangeAsync(prices, ct);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<StockPrice?> GetByDateAsync(string symbol, DateOnly date, CancellationToken ct = default)
+        => await db.StockPrices
+            .Where(sp => sp.Stock.Symbol == symbol.ToUpperInvariant() && sp.Date == date)
+            .FirstOrDefaultAsync(ct);
 }

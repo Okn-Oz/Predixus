@@ -5,6 +5,7 @@ public class User : BaseEntity
     public string Email { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
     public bool IsActive { get; private set; }
+    public string Role { get; private set; } = "User";
 
     public ICollection<Prediction> Predictions { get; private set; } = new List<Prediction>();
 
@@ -15,18 +16,26 @@ public class User : BaseEntity
 
 
     // geçerli nesne oluşturma metodu ( factory pattern ) içinde gerekli validasyonlar var ve onlar geçerli olmadan oluşturamayız
-    public static User Create(string email, string passwordHash)
+    public static User Create(string email, string passwordHash, string role = "User")
     {
         if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email boş olamaz.");
         if (string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentException("PasswordHash boş olamaz.");
 
         return new User
         {
-            //db de çakışma önleme için tüm emailleri lowercase 
+            //db de çakışma önleme için tüm emailleri lowercase
             Email = email.ToLowerInvariant(),
             PasswordHash = passwordHash,
-            IsActive = true
+            IsActive = true,
+            Role = role
         };
+    }
+
+    public void SetRole(string role)
+    {
+        if (string.IsNullOrWhiteSpace(role)) throw new ArgumentException("Rol boş olamaz.");
+        Role = role;
+        SetUpdated();
     }
 
     public void UpdatePasswordHash(string newPasswordHash)

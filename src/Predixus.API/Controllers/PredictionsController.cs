@@ -12,12 +12,10 @@ namespace Predixus.API.Controllers;
 public class PredictionsController(IPredictionService predictionService) : ControllerBase
 {
     [HttpPost]
-    public async Task<ActionResult<PredictionResponseDto>> Predict(
-        PredictionRequestDto request,
-        CancellationToken ct)
+    public async Task<ActionResult<PredictionResponseDto>> Predict(CancellationToken ct)
     {
         var userId = GetUserId();
-        var response = await predictionService.PredictAsync(userId, request, ct);
+        var response = await predictionService.PredictAsync(userId, ct);
 
         if (response.FromCache)
             Response.Headers["X-Cache"] = "HIT";
@@ -25,13 +23,13 @@ public class PredictionsController(IPredictionService predictionService) : Contr
         return Ok(response);
     }
 
-    [HttpGet("{symbol}/history")]
+    [HttpGet("history")]
     public async Task<ActionResult<List<PredictionResponseDto>>> GetHistory(
-        string symbol,
         [FromQuery] int count = 10,
         CancellationToken ct = default)
     {
-        var history = await predictionService.GetHistoryAsync(symbol, count, ct);
+        var userId = GetUserId();
+        var history = await predictionService.GetHistoryAsync(userId, count, ct);
         return Ok(history);
     }
 

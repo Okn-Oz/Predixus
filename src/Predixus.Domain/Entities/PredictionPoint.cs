@@ -3,6 +3,7 @@ namespace Predixus.Domain.Entities;
 public class PredictionPoint : BaseEntity
 {
     public Guid PredictionId { get; private set; }
+    public Prediction Prediction { get; private set; } = null!;
     public int DayOffset { get; private set; }
     public decimal PredictedPrice { get; private set; }
     public decimal? ActualPrice { get; private set; }

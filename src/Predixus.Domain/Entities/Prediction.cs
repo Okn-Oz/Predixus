@@ -11,7 +11,9 @@ public class Prediction : BaseEntity
 
     public ICollection<PredictionPoint> Points { get; private set; } = new List<PredictionPoint>();
 
-    private static readonly int[] AllowedForecastDays = [5, 10, 30];
+    // Şu an sadece 1 (ertesi gün) destekleniyor.
+    // Arkadaşın 5, 10, 30 günlük modelleri eklediğinde buraya eklenecek.
+    private static readonly int[] SupportedForecastDays = [1];
 
     private Prediction() { }
 
@@ -19,8 +21,8 @@ public class Prediction : BaseEntity
     {
         if (stockId == Guid.Empty) throw new ArgumentException("StockId geçersiz.");
         if (userId == Guid.Empty) throw new ArgumentException("UserId geçersiz.");
-        if (!AllowedForecastDays.Contains(forecastDays))
-            throw new ArgumentException("ForecastDays yalnızca 5, 10 veya 30 olabilir.");
+        if (!SupportedForecastDays.Contains(forecastDays))
+            throw new ArgumentException($"ForecastDays şu an yalnızca {string.Join(", ", SupportedForecastDays)} olabilir.");
         if (confidenceScore < 0 || confidenceScore > 1)
             throw new ArgumentException("ConfidenceScore 0 ile 1 arasında olmalıdır.");
 

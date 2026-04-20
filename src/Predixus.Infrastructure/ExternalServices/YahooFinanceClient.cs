@@ -13,7 +13,7 @@ public class YahooFinanceClient(
     ILogger<YahooFinanceClient> logger) : IYahooFinanceClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-    private readonly int _requestDelayMs = int.TryParse(configuration["YahooFinance:RequestDelayMs"], out var delay) ? delay : 500;
+    private readonly int _requestDelayMs = int.TryParse(configuration["YahooFinance:RequestDelayMs"], out var delay) ? delay : 1000;
 
     public async Task<List<StockPriceDto>> GetHistoricalDataAsync(
         string symbol,
@@ -35,7 +35,14 @@ public class YahooFinanceClient(
         {
             await Task.Delay(_requestDelayMs, ct);
 
-            var response = await httpClient.GetAsync(url, ct);
+            // Yahoo Finance browser gibi header bekliyor
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            request.Headers.Add("Accept", "application/json,text/html,*/*");
+            request.Headers.Add("Accept-Language", "en-US,en;q=0.9");
+            request.Headers.Add("Referer", "https://finance.yahoo.com/");
+
+            var response = await httpClient.SendAsync(request, ct);
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync(ct);

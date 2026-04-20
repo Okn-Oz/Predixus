@@ -10,6 +10,9 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await db.Users.FindAsync([id], ct);
 
+    public async Task<List<User>> GetAllAsync(CancellationToken ct = default)
+        => await db.Users.Include(u => u.Predictions).OrderBy(u => u.CreatedAt).ToListAsync(ct);
+
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
         => await db.Users.FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), ct);
 
@@ -44,4 +47,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
 
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task SaveChangesAsync(CancellationToken ct = default)
+        => await db.SaveChangesAsync(ct);
 }

@@ -62,6 +62,20 @@ public class AuthService(
         return await GenerateAuthResponseAsync(user, ct);
     }
 
+    public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default)
+    {
+        var user = await userRepository.GetByIdAsync(userId, ct)
+            ?? throw new UnauthorizedException("Kullanıcı bulunamadı.");
+
+        if (!passwordHasher.Verify(request.CurrentPassword, user.PasswordHash))
+            throw new UnauthorizedException("Mevcut şifre hatalı.");
+
+        user.UpdatePasswordHash(passwordHasher.Hash(request.NewPassword));
+        await userRepository.SaveChangesAsync(ct);
+
+        logger.LogInformation("Şifre değiştirildi: {UserId}", userId);
+    }
+
     private async Task<AuthResponse> GenerateAuthResponseAsync(User user, CancellationToken ct)
     {
         var accessToken = jwtTokenService.GenerateAccessToken(user);
@@ -71,6 +85,6 @@ public class AuthService(
         var refreshToken = RefreshToken.Create(user.Id, refreshTokenValue, expirationDays: 7);
         await userRepository.AddRefreshTokenAsync(refreshToken, ct);
 
-        return new AuthResponse(accessToken, refreshTokenValue, expiresAt, user.Email);
+        return new AuthResponse(accessToken, refreshTokenValue, expiresAt, user.Email, user.Role);
     }
 }

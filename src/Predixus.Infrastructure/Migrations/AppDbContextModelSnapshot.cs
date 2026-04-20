@@ -22,6 +22,44 @@ namespace Predixus.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Predixus.Domain.Entities.Alert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsTriggered")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("StockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("TargetPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StockId");
+
+                    b.ToTable("Alerts");
+                });
+
             modelBuilder.Entity("Predixus.Domain.Entities.Prediction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -29,7 +67,7 @@ namespace Predixus.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("ConfidenceScore")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(5,4)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -55,7 +93,7 @@ namespace Predixus.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Predictions");
+                    b.ToTable("predictions", (string)null);
                 });
 
             modelBuilder.Entity("Predixus.Domain.Entities.PredictionPoint", b =>
@@ -65,7 +103,7 @@ namespace Predixus.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal?>("ActualPrice")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -74,7 +112,7 @@ namespace Predixus.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal>("PredictedPrice")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid>("PredictionId")
                         .HasColumnType("uuid");
@@ -86,7 +124,7 @@ namespace Predixus.Infrastructure.Migrations
 
                     b.HasIndex("PredictionId");
 
-                    b.ToTable("PredictionPoints");
+                    b.ToTable("prediction_points", (string)null);
                 });
 
             modelBuilder.Entity("Predixus.Domain.Entities.RefreshToken", b =>
@@ -137,25 +175,33 @@ namespace Predixus.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("Sector")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Symbol")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Stocks");
+                    b.HasIndex("Symbol")
+                        .IsUnique();
+
+                    b.ToTable("stocks", (string)null);
                 });
 
             modelBuilder.Entity("Predixus.Domain.Entities.StockPrice", b =>
@@ -165,7 +211,7 @@ namespace Predixus.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Close")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -174,13 +220,13 @@ namespace Predixus.Infrastructure.Migrations
                         .HasColumnType("date");
 
                     b.Property<decimal>("High")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal>("Low")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal>("Open")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid>("StockId")
                         .HasColumnType("uuid");
@@ -193,9 +239,10 @@ namespace Predixus.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StockId");
+                    b.HasIndex("StockId", "Date")
+                        .IsUnique();
 
-                    b.ToTable("StockPrices");
+                    b.ToTable("stock_prices", (string)null);
                 });
 
             modelBuilder.Entity("Predixus.Domain.Entities.User", b =>
@@ -221,6 +268,12 @@ namespace Predixus.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("User");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -230,6 +283,17 @@ namespace Predixus.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("Predixus.Domain.Entities.Alert", b =>
+                {
+                    b.HasOne("Predixus.Domain.Entities.Stock", "Stock")
+                        .WithMany()
+                        .HasForeignKey("StockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Stock");
                 });
 
             modelBuilder.Entity("Predixus.Domain.Entities.Prediction", b =>
