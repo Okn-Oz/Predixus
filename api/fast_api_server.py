@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import torch
 import io
 import pandas as pd
-from src.train_lstm3 import FinancialAttentionLSTM 
+from train_lstm import FinancialAttentionLSTM 
 import uvicorn
 from src.config import DEVICE
 
